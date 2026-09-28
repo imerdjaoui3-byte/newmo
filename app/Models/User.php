@@ -74,6 +74,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the push-notification device tokens registered for the user.
+     */
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    /**
      * Scope a query to only include users with an assigned rank (rank 0 is hidden everywhere).
      */
     public function scopeRanked(Builder $query): Builder
@@ -88,7 +96,7 @@ class User extends Authenticatable
     {
         $initials = collect(preg_split('/\s+/', trim($this->name)))
             ->filter()
-            ->map(fn (string $part) => mb_substr($part, 0, 1))
+            ->map(fn(string $part) => mb_substr($part, 0, 1))
             ->take(2)
             ->implode('');
 
@@ -104,7 +112,7 @@ class User extends Authenticatable
 
         $index = crc32($this->email) % count($palette);
 
-        return 'var('.$palette[$index].')';
+        return 'var(' . $palette[$index] . ')';
     }
 
     /**
