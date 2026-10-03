@@ -61,6 +61,26 @@ class Driver extends Model
     }
 
     /**
+     * Get the driver's details as shown on the live tracking map.
+     *
+     * @return array{id: int, name: string, phone: ?string, car: ?string, color: ?string, status: ?string, lat: float, lng: float, updated_at: ?string}
+     */
+    public function toTrackingArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->user->name,
+            'phone' => $this->phone,
+            'car' => $this->car,
+            'color' => $this->color,
+            'status' => $this->status,
+            'lat' => (float) $this->gps_lat,
+            'lng' => (float) $this->gps_lng,
+            'updated_at' => $this->gps_updated_at?->diffForHumans(),
+        ];
+    }
+
+    /**
      * Get the badge color variant for the driver's status.
      */
     public function statusBadgeVariant(): string

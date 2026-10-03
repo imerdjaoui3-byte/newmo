@@ -21,17 +21,7 @@ class DriverTrackingController extends Controller
      */
     public function data(): JsonResponse
     {
-        $drivers = Driver::online()->with('user')->get()->map(fn (Driver $driver) => [
-            'id' => $driver->id,
-            'name' => $driver->user->name,
-            'phone' => $driver->phone,
-            'car' => $driver->car,
-            'color' => $driver->color,
-            'status' => $driver->status,
-            'lat' => (float) $driver->gps_lat,
-            'lng' => (float) $driver->gps_lng,
-            'updated_at' => $driver->gps_updated_at?->diffForHumans(),
-        ]);
+        $drivers = Driver::online()->with('user')->get()->map(fn (Driver $driver) => $driver->toTrackingArray());
 
         return response()->json(['drivers' => $drivers]);
     }

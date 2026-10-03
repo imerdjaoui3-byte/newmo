@@ -146,6 +146,16 @@
                 });
             }
 
+            const drivers = new Map();
+
+            function render() {
+                const list = [...drivers.values()];
+
+                countEl.textContent = `${list.length} online`;
+                syncMarkers(list);
+                renderList(list);
+            }
+
             async function refresh() {
                 try {
                     const response = await fetch('{{ route('drivers.tracking.data') }}', {
@@ -155,16 +165,28 @@
                     });
                     const data = await response.json();
 
-                    countEl.textContent = `${data.drivers.length} online`;
-                    syncMarkers(data.drivers);
-                    renderList(data.drivers);
+                    drivers.clear();
+                    data.drivers.forEach(driver => drivers.set(driver.id, driver));
+                    render();
                 } catch (error) {
                     // silently retry on the next poll
                 }
             }
 
             refresh();
-            setInterval(refresh, 8000);
+
+            if (window.Echo) {
+                // Live positions arrive over Reverb; the slow refresh only drops drivers who logged out.
+                window.Echo.private('drivers.tracking')
+                    .listen('DriverLocationUpdated', (event) => {
+                        drivers.set(event.driver.id, event.driver);
+                        render();
+                    });
+
+                setInterval(refresh, 60000);
+            } else {
+                setInterval(refresh, 8000);
+            }
         });
     </script>
 @endpush

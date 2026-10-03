@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DriverLocationUpdated;
 use Illuminate\Http\Request;
 
 class DriverLocationController extends Controller
@@ -24,6 +25,8 @@ class DriverLocationController extends Controller
             'gps_lng' => $request->lng,
             'gps_updated_at' => now(),
         ]);
+
+        DriverLocationUpdated::dispatch($driver);
 
         return response()->json([
             'status' => 'ok',
