@@ -48,6 +48,14 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        if (Auth::user()->isPending()) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'An admin needs to approve your account before you can sign in.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

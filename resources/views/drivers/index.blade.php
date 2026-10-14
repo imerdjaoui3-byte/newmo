@@ -15,23 +15,23 @@
                 Driver</a>
         </div>
         <div class="card-body">
-            <table id="driversTable" class="table">
+            <table id="driversTable" class="table table-stack">
                 <thead>
                     <tr>
                         <th>Driver</th>
-                        <th class="d-none d-md-table-cell">Phone</th>
-                        <th class="d-none d-md-table-cell">Car</th>
-                        <th class="d-none d-md-table-cell">Color</th>
-                        <th class="d-none d-md-table-cell">Status</th>
+                        <th>Phone</th>
+                        <th>Car</th>
+                        <th>Color</th>
+                        <th>Status</th>
                         <th>Rating</th>
-                        <th class="d-none d-md-table-cell">Active</th>
+                        <th>Active</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($drivers as $driver)
                         <tr>
-                            <td>
+                            <td data-label="Driver">
                                 @if ($driver->user)
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-circle-fill {{ $driver->user->is_online ? 'text-success' : 'text-danger' }}" style="font-size: 0.6rem;" title="{{ $driver->user->is_online ? 'Online' : 'Offline' }}"></i>
@@ -41,19 +41,19 @@
                                     <span class="text-muted">&mdash;</span>
                                 @endif
                             </td>
-                            <td class="d-none d-md-table-cell">{{ $driver->phone }}</td>
-                            <td class="d-none d-md-table-cell">{{ $driver->car ?? '—' }}</td>
-                            <td class="d-none d-md-table-cell">{{ $driver->color ?? '—' }}</td>
-                            <td class="d-none d-md-table-cell"><span class="la-badge la-badge-{{ $driver->statusBadgeVariant() }}">{{ ucfirst(str_replace('_', ' ', $driver->status)) }}</span></td>
-                            <td>{{ $driver->rating }}</td>
-                            <td class="d-none d-md-table-cell">
+                            <td data-label="Phone">{{ $driver->phone }}</td>
+                            <td data-label="Car">{{ $driver->car ?? '—' }}</td>
+                            <td data-label="Color">{{ $driver->color ?? '—' }}</td>
+                            <td data-label="Status"><span class="la-badge la-badge-{{ $driver->statusBadgeVariant() }}">{{ ucfirst(str_replace('_', ' ', $driver->status)) }}</span></td>
+                            <td data-label="Rating">{{ $driver->rating }}</td>
+                            <td data-label="Active">
                                 @if ($driver->is_active)
                                     <span class="la-badge la-badge-success">Yes</span>
                                 @else
                                     <span class="la-badge la-badge-danger">No</span>
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="Actions">
                                 <div class="d-flex gap-2">
                                     <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-sm btn-icon btn-outline-secondary">
                                         <i class="bi bi-pencil"></i>

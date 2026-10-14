@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Models\Driver;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +18,10 @@ class UserController extends Controller
      */
     public function index(): View
     {
-        $users = User::ranked()->latest()->get();
+        $users = User::where(fn (Builder $query) => $query->ranked()->orWhereNull('rank'))
+            ->orderByRaw('`rank` is null desc')
+            ->latest()
+            ->get();
 
         return view('users.index', compact('users'));
     }

@@ -33,7 +33,12 @@
                 <h5 class="card-title mb-1">Live Driver Tracking</h5>
                 <p class="text-muted small mb-0">Drivers currently logged in and their last known location</p>
             </div>
-            <span class="la-badge la-badge-info" id="trackingCount">0 online</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="la-badge la-badge-info" id="trackingCount">0 online</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="trackingRefresh">
+                    <i class="ph ph-arrows-clockwise"></i> Refresh
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <div class="row g-3">
@@ -174,6 +179,14 @@
             }
 
             refresh();
+
+            const refreshBtn = document.getElementById('trackingRefresh');
+
+            refreshBtn.addEventListener('click', async () => {
+                refreshBtn.disabled = true;
+                await refresh();
+                refreshBtn.disabled = false;
+            });
 
             if (window.Echo) {
                 // Live positions arrive over Reverb; the slow refresh only drops drivers who logged out.

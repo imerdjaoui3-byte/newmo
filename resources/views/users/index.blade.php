@@ -15,11 +15,11 @@
                 User</a>
         </div>
         <div class="card-body">
-            <table id="usersTable" class="table">
+            <table id="usersTable" class="table table-stack">
                 <thead>
                     <tr>
                         <th>User</th>
-                        <th class="d-none d-md-table-cell">Email</th>
+                        <th>Email</th>
                         <th>Rank</th>
                         <th>Actions</th>
                     </tr>
@@ -27,15 +27,15 @@
                 <tbody>
                     @foreach ($users as $user)
                         <tr>
-                            <td>
+                            <td data-label="User">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-circle-fill {{ $user->is_online ? 'text-success' : 'text-danger' }}" style="font-size: 0.6rem;" title="{{ $user->is_online ? 'Online' : 'Offline' }}"></i>
                                     <span>{{ $user->name }}</span>
                                 </div>
                             </td>
-                            <td class="d-none d-md-table-cell">{{ $user->email }}</td>
-                            <td><span class="la-badge la-badge-{{ $user->roleBadgeVariant() }}">{{ $user->roleLabel() }}</span></td>
-                            <td>
+                            <td data-label="Email">{{ $user->email }}</td>
+                            <td data-label="Rank"><span class="la-badge la-badge-{{ $user->roleBadgeVariant() }}">{{ $user->roleLabel() }}</span></td>
+                            <td data-label="Actions">
                                 <div class="d-flex gap-2">
                                     <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-icon btn-outline-secondary">
                                         <i class="bi bi-pencil"></i>

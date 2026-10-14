@@ -10,14 +10,18 @@ firebase.initializeApp({
   appId: "1:801873527863:web:5e9a1420c2af0e0498abb2"
 });
 
-const messaging = firebase.messaging();
+// Background messages carry a `notification` payload, which the Firebase SDK displays on its own
+// (including the click-through link), so no onBackgroundMessage handler is needed.
+firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/favicon.ico',
-  };
+// Notifications the page shows itself while open (see firebase-notifications.js) open their link when clicked.
+self.addEventListener('notificationclick', (event) => {
+  const link = event.notification.data?.link;
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  if (!link) {
+    return;
+  }
+
+  event.notification.close();
+  event.waitUntil(clients.openWindow(link));
 });

@@ -24,6 +24,30 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
+                        href="{{ route('products.index') }}">
+                        <span class="nav-icon"><i class="ph ph-package"></i></span>
+                        <span class="nav-text">Products</span>
+
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('orders.*') ? 'active' : '' }}"
+                        href="{{ route('orders.index') }}">
+                        <span class="nav-icon"><i class="ph ph-receipt"></i></span>
+                        <span class="nav-text">Orders</span>
+
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('driver-loads.*') ? 'active' : '' }}"
+                        href="{{ route('driver-loads.index') }}">
+                        <span class="nav-icon"><i class="ph ph-truck"></i></span>
+                        <span class="nav-text">Driver Stock</span>
+
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('drivers.tracking') ? 'active' : '' }}"
                         href="{{ route('drivers.tracking') }}">
                         <span class="nav-icon"><i class="ph ph-map-pin"></i></span>
@@ -32,6 +56,14 @@
                     </a>
                 </li>
             @endunless
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('bills.*') ? 'active' : '' }}"
+                        href="{{ route('bills.index') }}">
+                        <span class="nav-icon"><i class="ph ph-invoice"></i></span>
+                        <span class="nav-text">Bills</span>
+
+                    </a>
+                </li>
         </ul>
     </nav>
 

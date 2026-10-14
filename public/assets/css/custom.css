@@ -66,3 +66,131 @@
   height: 2rem;
   padding: 0;
 }
+
+/* Driver dashboard order rows */
+
+.order-row .min-w-0 {
+  min-width: 0;
+}
+
+.order-row-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted-color);
+  background: var(--border-color-light);
+  border: 1px solid var(--border-color);
+}
+
+.order-row-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+
+.order-row-phone,
+.order-row-address {
+  font-size: 0.875rem;
+  color: var(--default-color);
+  text-decoration: none;
+}
+
+.order-row-label {
+  margin-bottom: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted-color);
+}
+
+.order-row-status {
+  flex-shrink: 0;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color), transparent 75%);
+}
+
+.order-row-status-warning {
+  color: var(--warning-color);
+  background: color-mix(in srgb, var(--warning-color), transparent 80%);
+}
+
+.order-row-actions .btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* Stacked tables: below the md breakpoint each row becomes a card of label / value lines */
+@media (max-width: 767.98px) {
+  .table-stack thead {
+    display: none;
+  }
+
+  .table-stack,
+  .table-stack tbody,
+  .table-stack tfoot,
+  .table-stack tr,
+  .table-stack td {
+    display: block;
+    /* !important beats the inline column widths simple-datatables sets on each cell */
+    width: 100% !important;
+  }
+
+  .table-stack tr {
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 6px);
+  }
+
+  .table-stack td {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color-light);
+  }
+
+  /* The first cell becomes the card's title bar, styled like .bg-primary .text-white */
+  .table-stack tr td:first-child {
+    color: #fff !important;
+    font-weight: 600;
+    background-color: var(--accent-color) !important;
+    box-shadow: none;
+  }
+
+  .table-stack tr td:first-child::before {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .table-stack tr td:last-child {
+    border-bottom: 0;
+  }
+
+  .table-stack td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 5.5rem;
+    color: var(--muted-color);
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .table-stack td > * {
+    min-width: 0;
+  }
+
+  .table-stack td > form {
+    flex: 1;
+  }
+}

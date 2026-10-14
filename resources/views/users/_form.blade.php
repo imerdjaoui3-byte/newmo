@@ -35,9 +35,12 @@
     <div class="col-md-6">
         <label for="rank" class="form-label">Rank</label>
         <select class="form-select @error('rank') is-invalid @enderror" id="rank" name="rank" required>
+            @if ($user?->isPending())
+                <option value="" selected disabled>Pending approval — choose a rank</option>
+            @endif
             @foreach (\App\Models\User::roleLabels() as $rank => $label)
                 @continue($rank === 0)
-                <option value="{{ $rank }}" @selected(old('rank', $user?->rank ?? 3) == $rank)>{{ $rank }} - {{ $label }}</option>
+                <option value="{{ $rank }}" @selected(old('rank', $user ? $user->rank : 3) == $rank)>{{ $rank }} - {{ $label }}</option>
             @endforeach
         </select>
         @error('rank')

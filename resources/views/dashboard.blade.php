@@ -18,7 +18,7 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                <table class="table mb-0" id="onlineDriversTable">
+                <table class="table table-stack mb-0" id="onlineDriversTable">
                     <thead>
                         <tr>
                             <th>Driver</th>
@@ -30,15 +30,15 @@
                     <tbody>
                         @forelse ($onlineDrivers as $driver)
                             <tr>
-                                <td>
+                                <td data-label="Driver">
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-circle-fill text-success" style="font-size: 0.6rem;"></i>
                                         <span>{{ $driver->user->name }}</span>
                                     </div>
                                 </td>
-                                <td>{{ $driver->car ?? '—' }} {{ $driver->color ? '· '.$driver->color : '' }}</td>
-                                <td>{{ number_format($driver->gps_lat, 4) }}, {{ number_format($driver->gps_lng, 4) }}</td>
-                                <td>{{ $driver->gps_updated_at?->diffForHumans() }}</td>
+                                <td data-label="Car">{{ $driver->car ?? '—' }} {{ $driver->color ? '· '.$driver->color : '' }}</td>
+                                <td data-label="Location">{{ number_format($driver->gps_lat, 4) }}, {{ number_format($driver->gps_lng, 4) }}</td>
+                                <td data-label="Updated">{{ $driver->gps_updated_at?->diffForHumans() }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -76,15 +76,15 @@
 
                     tbody.innerHTML = data.drivers.map(driver => `
                         <tr>
-                            <td>
+                            <td data-label="Driver">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-circle-fill text-success" style="font-size: 0.6rem;"></i>
                                     <span>${driver.name}</span>
                                 </div>
                             </td>
-                            <td>${driver.car ?? '—'} ${driver.color ? '· ' + driver.color : ''}</td>
-                            <td>${driver.lat.toFixed(4)}, ${driver.lng.toFixed(4)}</td>
-                            <td>${driver.updated_at ?? 'just now'}</td>
+                            <td data-label="Car">${driver.car ?? '—'} ${driver.color ? '· ' + driver.color : ''}</td>
+                            <td data-label="Location">${driver.lat.toFixed(4)}, ${driver.lng.toFixed(4)}</td>
+                            <td data-label="Updated">${driver.updated_at ?? 'just now'}</td>
                         </tr>
                     `).join('');
                 } catch (error) {

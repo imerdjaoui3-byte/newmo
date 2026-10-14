@@ -28,6 +28,7 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+        $request->session()->flash('promptNotifications', true);
 
         $redirectTo = $request->session()->pull('url.intended', route('dashboard'));
 

@@ -14,7 +14,9 @@
                 </div>
 
                 <div class="fauth-card">
-
+                    @if (session('status'))
+                        <div class="alert alert-info small">{{ session('status') }}</div>
+                    @endif
 
                     <form class="fauth-form" method="POST" action="{{ route('login') }}" data-login-form novalidate>
                         @csrf
@@ -49,9 +51,15 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100">Sign In</button>
-
-
                     </form>
+
+                    <div class="d-flex align-items-center gap-2 my-3 text-muted small">
+                        <hr class="flex-grow-1 m-0"> or <hr class="flex-grow-1 m-0">
+                    </div>
+
+                    <a href="{{ route('google.redirect') }}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-google"></i>Sign in with Google
+                    </a>
                 </div>
 
 

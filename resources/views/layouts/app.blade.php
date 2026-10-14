@@ -39,7 +39,7 @@
     <link href="{{ asset('assets/css/theme-overrides.css') }}" rel="stylesheet">
 
     <!-- App-specific additions (avatars, badges, icon buttons) -->
-    <link href="{{ asset('assets/css/custom.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/custom.css') }}?v={{ filemtime(public_path('assets/css/custom.css')) }}" rel="stylesheet">
 
     @stack('styles')
 
@@ -70,6 +70,24 @@
 
     </main>
 
+    @if (session('promptNotifications'))
+        <!-- Shown right after login; the browser only allows the permission prompt from a click -->
+        <div class="card shadow position-fixed bottom-0 end-0 m-3 d-none" id="notificationPrompt"
+            style="z-index: 1080; max-width: 22rem;">
+            <div class="card-body d-flex gap-3">
+                <i class="bi bi-bell fs-4 text-primary"></i>
+                <div>
+                    <p class="fw-semibold mb-1">Turn on notifications?</p>
+                    <p class="text-muted small mb-2">Get alerted about new orders and updates, even when this tab is closed.</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" data-enable-notifications>Enable</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss-notifications>Not now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Back to Top -->
     <a href="#" class="back-to-top">
         <i class="bi bi-arrow-up"></i>
@@ -94,7 +112,9 @@
     <!-- App Sidebar Toggle (for app pages with sidebars) -->
     <script src="{{ asset('assets/js/apps-sidebar-toggle.js') }}"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script type="module" src="/js/firebase-notifications.js"></script>
+    <script type="module" src="{{ asset('js/firebase-notifications.js') }}"
+        data-device-token-url="{{ route('device-tokens.store') }}"
+        data-service-worker-url="{{ asset('firebase-messaging-sw.js') }}"></script>
     @vite(['resources/js/app.js'])
 
     @stack('scripts')
