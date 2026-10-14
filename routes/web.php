@@ -5,7 +5,6 @@ use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\CheckOrderPaymentController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\DispatchOrderController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\DriverLoadController;
@@ -17,6 +16,7 @@ use App\Http\Controllers\MarkOrderPaidController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductStockController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReturnDriverLoadsController;
 use App\Http\Controllers\SmsWebhookController;
 use App\Http\Controllers\UnassignOrderController;
@@ -62,7 +62,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/tracking', [DriverTrackingController::class, 'index'])->name('drivers.tracking');
     Route::get('/tracking/data', [DriverTrackingController::class, 'data'])->name('drivers.tracking.data');
 
-    Route::post('/device-tokens', DeviceTokenController::class)->name('device-tokens.store');
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])->name('push-subscriptions.store');
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push-subscriptions.destroy');
 
     Route::post('/driver/location', [DriverLocationController::class, 'update'])->name('driver.location.update');
     Route::patch('/driver/orders/{order}/status', DriverOrderStatusController::class)->name('driver.orders.status');

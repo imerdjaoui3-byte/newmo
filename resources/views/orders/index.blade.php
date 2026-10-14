@@ -124,8 +124,7 @@
                                                 class="small align-self-center text-md-nowrap {{ $paymentCheck['found'] ? 'text-success' : 'text-danger' }}">{{ $paymentCheck['message'] }}</span>
                                         @elseif ($order->payment_received_at)
                                             <span class="small align-self-center text-md-nowrap text-success"
-                                                title="{{ $order->payment_received_at->toDayDateTimeString() }}">Email
-                                                received {{ $order->payment_received_at->diffForHumans() }}.</span>
+                                                title="{{ $order->payment_received_at->toDayDateTimeString() }}">{{ "Email received {$order->payment_received_at->diffForHumans()}." }}</span>
                                         @endif
                                     @endif
                                 </div>

@@ -15,11 +15,12 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Socialite\Two\User as GoogleUser;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -76,14 +77,6 @@ class User extends Authenticatable
     public function activities(): HasMany
     {
         return $this->hasMany(UserActivity::class);
-    }
-
-    /**
-     * Get the push-notification device tokens registered for the user.
-     */
-    public function deviceTokens(): HasMany
-    {
-        return $this->hasMany(DeviceToken::class);
     }
 
     /**

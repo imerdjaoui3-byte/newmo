@@ -4,8 +4,9 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use NotificationChannels\WebPush\PushSubscription;
 
-class StoreDeviceTokenRequest extends FormRequest
+class StorePushSubscriptionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,7 +24,10 @@ class StoreDeviceTokenRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token' => ['required', 'string', 'max:255'],
+            'endpoint' => ['required', 'url:https', 'max:'.PushSubscription::ENDPOINT_MAX_LENGTH],
+            'keys.p256dh' => ['required', 'string', 'max:255'],
+            'keys.auth' => ['required', 'string', 'max:255'],
+            'contentEncoding' => ['nullable', 'in:aesgcm,aes128gcm'],
         ];
     }
 }

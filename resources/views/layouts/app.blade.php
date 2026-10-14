@@ -70,8 +70,8 @@
 
     </main>
 
-    @if (session('promptNotifications'))
-        <!-- Shown right after login; the browser only allows the permission prompt from a click -->
+    @if (session('promptNotifications') || auth()->user()->isDriver())
+        <!-- Shown right after login, and to drivers until they answer (they need dispatch alerts); the browser only allows the permission prompt from a click -->
         <div class="card shadow position-fixed bottom-0 end-0 m-3 d-none" id="notificationPrompt"
             style="z-index: 1080; max-width: 22rem;">
             <div class="card-body d-flex gap-3">
@@ -112,9 +112,10 @@
     <!-- App Sidebar Toggle (for app pages with sidebars) -->
     <script src="{{ asset('assets/js/apps-sidebar-toggle.js') }}"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script type="module" src="{{ asset('js/firebase-notifications.js') }}"
-        data-device-token-url="{{ route('device-tokens.store') }}"
-        data-service-worker-url="{{ asset('firebase-messaging-sw.js') }}"></script>
+    <script type="module" src="{{ asset('js/push-notifications.js') }}"
+        data-subscription-url="{{ route('push-subscriptions.store') }}"
+        data-service-worker-url="{{ asset('service-worker.js') }}"
+        data-vapid-public-key="{{ config('webpush.vapid.public_key') }}"></script>
     @vite(['resources/js/app.js'])
 
     @stack('scripts')

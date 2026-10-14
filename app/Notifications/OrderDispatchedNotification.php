@@ -3,8 +3,9 @@
 namespace App\Notifications;
 
 use App\Models\Order;
-use App\Notifications\Channels\FirebasePushChannel;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * Pushes a "new order" alert to the driver's browsers, even when the app is closed.
@@ -23,20 +24,20 @@ class OrderDispatchedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return [FirebasePushChannel::class];
+        return [WebPushChannel::class];
     }
 
     /**
-     * Get the push notification shown to the driver.
-     *
-     * @return array{title: string, body: string, link: string}
+     * Get the push notification shown to the driver; the service worker opens `data.url` when it is clicked.
      */
-    public function toFirebasePush(object $notifiable): array
+    public function toWebPush(object $notifiable, Notification $notification): WebPushMessage
     {
-        return [
-            'title' => 'New order dispatched',
-            'body' => $this->order->address ?? $this->order->customer->phone,
-            'link' => route('dashboard'),
-        ];
+        return (new WebPushMessage)
+            ->title('New order dispatched')
+            ->body($this->order->address ?? $this->order->customer->phone)
+            ->icon(asset('favicon.ico'))
+            ->tag("order-{$this->order->id}")
+            ->data(['url' => route('dashboard')])
+            ->options(['TTL' => 3600, 'urgency' => 'high']);
     }
 }
