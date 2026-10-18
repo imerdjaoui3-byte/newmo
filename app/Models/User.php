@@ -154,6 +154,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Scope a query to the staff who run dispatch: developers, super admins and dispatchers.
+     */
+    public function scopeStaff(Builder $query): Builder
+    {
+        return $query->whereIn('rank', [0, 1, 2]);
+    }
+
+    /**
      * Scope a query to only include users with an assigned rank (rank 0 is hidden everywhere).
      */
     public function scopeRanked(Builder $query): Builder

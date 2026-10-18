@@ -34,7 +34,7 @@ class OrderDispatchedNotification extends Notification
     {
         return (new WebPushMessage)
             ->title('New order dispatched')
-            ->body($this->order->address ?? $this->order->customer->phone)
+            ->body($this->order->address ?? "Order #{$this->order->id}")
             ->icon(asset('favicon.ico'))
             ->tag("order-{$this->order->id}")
             ->data(['url' => route('dashboard')])

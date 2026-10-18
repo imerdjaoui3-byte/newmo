@@ -25,23 +25,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.querySelectorAll('[data-confirm-form]').forEach((form) => {
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
+    // Delegated, so forms swapped in by live page updates still ask for confirmation.
+    document.addEventListener('submit', (e) => {
+        const form = e.target.closest('[data-confirm-form]');
 
-            Swal.fire({
-                title: form.dataset.confirmTitle || 'Are you sure?',
-                text: form.dataset.confirmText || 'This action cannot be undone.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: form.dataset.confirmButton || 'Confirm',
-                cancelButtonText: 'Cancel',
-                confirmButtonColor: '#ef4444',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
+        if (!form) {
+            return;
+        }
+
+        e.preventDefault();
+
+        Swal.fire({
+            title: form.dataset.confirmTitle || 'Are you sure?',
+            text: form.dataset.confirmText || 'This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: form.dataset.confirmButton || 'Confirm',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
         });
     });
 

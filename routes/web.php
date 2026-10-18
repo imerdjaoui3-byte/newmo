@@ -11,6 +11,7 @@ use App\Http\Controllers\DriverLoadController;
 use App\Http\Controllers\DriverLocationController;
 use App\Http\Controllers\DriverOrderStatusController;
 use App\Http\Controllers\DriverTrackingController;
+use App\Http\Controllers\DriverTrackingSetupController;
 use App\Http\Controllers\MailboxController;
 use App\Http\Controllers\MarkOrderPaidController;
 use App\Http\Controllers\OrderController;
@@ -68,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/driver/location', [DriverLocationController::class, 'update'])->name('driver.location.update');
     Route::patch('/driver/orders/{order}/status', DriverOrderStatusController::class)->name('driver.orders.status');
     Route::post('/driver/loads/return', ReturnDriverLoadsController::class)->name('driver.loads.return');
+    Route::post('/driver/tracking-setup', DriverTrackingSetupController::class)->name('driver.tracking.setup');
 
     Route::get('/bills', [BillController::class, 'index'])->name('bills.index');
 

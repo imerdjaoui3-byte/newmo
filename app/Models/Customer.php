@@ -13,6 +13,16 @@ class Customer extends Model
     use HasFactory;
 
     /**
+     * The rating customers start with, before any driver has rated them.
+     */
+    public const DEFAULT_RATING = 5.00;
+
+    /**
+     * The rating a customer gets for an order they didn't show up for.
+     */
+    public const NO_SHOW_RATING = 1;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -29,7 +39,7 @@ class Customer extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'rating' => 5.00,
+        'rating' => self::DEFAULT_RATING,
     ];
 
     /**
@@ -56,6 +66,16 @@ class Customer extends Model
             ->implode('.');
 
         return $initials ?: null;
+    }
+
+    /**
+     * Recalculate the customer's rating as the average of every rating drivers gave them, back to 5 stars when unrated.
+     */
+    public function refreshRating(): void
+    {
+        $average = $this->orders()->whereNotNull('customer_rating')->avg('customer_rating');
+
+        $this->update(['rating' => $average === null ? self::DEFAULT_RATING : round((float) $average, 2)]);
     }
 
     /**

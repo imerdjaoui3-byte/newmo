@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\OrderChanged;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,7 +36,17 @@ class Order extends Model
         'payment_verified_at',
         'payment_received_at',
         'completed_at',
+        'customer_rating',
     ];
+
+    /**
+     * Keep the staff pages live: every saved or deleted order tells them to refresh.
+     */
+    protected static function booted(): void
+    {
+        static::saved(fn (Order $order) => OrderChanged::dispatch($order->id, $order->status ?? 'pending'));
+        static::deleted(fn (Order $order) => OrderChanged::dispatch($order->id, 'deleted'));
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -46,6 +57,7 @@ class Order extends Model
     {
         return [
             'completed_at' => 'datetime',
+            'customer_rating' => 'integer',
             'payment_verified_at' => 'datetime',
             'payment_received_at' => 'datetime',
         ];

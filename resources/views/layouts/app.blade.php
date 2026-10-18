@@ -112,7 +112,7 @@
     <!-- App Sidebar Toggle (for app pages with sidebars) -->
     <script src="{{ asset('assets/js/apps-sidebar-toggle.js') }}"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script type="module" src="{{ asset('js/push-notifications.js') }}"
+    <script type="module" src="{{ asset('js/push-notifications.js') }}?v={{ filemtime(public_path('js/push-notifications.js')) }}"
         data-subscription-url="{{ route('push-subscriptions.store') }}"
         data-service-worker-url="{{ asset('service-worker.js') }}"
         data-vapid-public-key="{{ config('webpush.vapid.public_key') }}"></script>

@@ -1,12 +1,15 @@
 <?php
 
+use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\DriverLoad;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\OrderStatusChangedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 
 uses(RefreshDatabase::class);
 
@@ -30,7 +33,7 @@ test('the assigned driver can move an order through in route to done', function 
 
     expect($order->fresh()->status)->toBe('in_route');
 
-    $this->patch(route('driver.orders.status', $order), ['status' => 'done', 'payment_method' => 'cash', 'items' => $this->soldItems]);
+    $this->patch(route('driver.orders.status', $order), ['status' => 'done', 'payment_method' => 'cash', 'customer_rating' => 5, 'items' => $this->soldItems]);
 
     expect($order->fresh())
         ->status->toBe('done')
@@ -44,6 +47,7 @@ test('an EMT payment is saved with its transaction id and waits for the inbox ch
     $this->actingAs($this->driverUser)
         ->patch(route('driver.orders.status', $order), [
             'status' => 'done',
+            'customer_rating' => 5,
             'payment_method' => 'emt',
             'payment_reference' => 'CA1234XYZ',
             'items' => $this->soldItems,
@@ -61,6 +65,7 @@ test('a cash payment is marked paid right away and ignores any transaction id se
     $this->actingAs($this->driverUser)
         ->patch(route('driver.orders.status', $order), [
             'status' => 'done',
+            'customer_rating' => 5,
             'payment_method' => 'cash',
             'payment_reference' => 'leftover',
             'items' => $this->soldItems,
@@ -75,7 +80,7 @@ test('marking done requires a payment method, and EMT requires a transaction id'
     $order = Order::factory()->create(['driver_id' => $this->driverUser->id, 'status' => 'in_route']);
 
     $this->actingAs($this->driverUser)
-        ->patch(route('driver.orders.status', $order), ['status' => 'done', 'items' => $this->soldItems, ...$payment])
+        ->patch(route('driver.orders.status', $order), ['status' => 'done', 'customer_rating' => 5, 'items' => $this->soldItems, ...$payment])
         ->assertSessionHasErrors($field);
 
     expect($order->fresh()->status)->toBe('in_route');
@@ -91,6 +96,7 @@ test('marking done records the products sold at their current price', function (
     $this->actingAs($this->driverUser)
         ->patch(route('driver.orders.status', $order), [
             'status' => 'done',
+            'customer_rating' => 5,
             'payment_method' => 'cash',
             'items' => [['product_id' => $this->product->id, 'quantity' => 3]],
         ])
@@ -111,6 +117,7 @@ test('sold products are validated against the driver\'s remaining stock for toda
     $this->actingAs($this->driverUser)
         ->patch(route('driver.orders.status', $order), [
             'status' => 'done',
+            'customer_rating' => 5,
             'payment_method' => 'cash',
             'items' => $items,
         ])
@@ -172,4 +179,106 @@ test('the status must be in route or done', function () {
     $this->actingAs($this->driverUser)
         ->patch(route('driver.orders.status', $order), ['status' => 'pending'])
         ->assertSessionHasErrors('status');
+});
+
+test('the customer\'s rating is the average of every rating drivers gave them', function () {
+    $customer = Customer::factory()->create();
+    Order::factory()->create(['customer_id' => $customer->id, 'status' => 'done', 'customer_rating' => 2]);
+    $order = Order::factory()->create(['customer_id' => $customer->id, 'driver_id' => $this->driverUser->id, 'status' => 'in_route']);
+
+    $this->actingAs($this->driverUser)
+        ->patch(route('driver.orders.status', $order), [
+            'status' => 'done',
+            'payment_method' => 'cash',
+            'customer_rating' => 5,
+            'items' => $this->soldItems,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($order->fresh()->customer_rating)->toBe(5)
+        ->and($customer->fresh()->rating)->toBe('3.50');
+});
+
+test('a no show counts as the lowest rating', function () {
+    $customer = Customer::factory()->create();
+    $order = Order::factory()->create(['customer_id' => $customer->id, 'driver_id' => $this->driverUser->id, 'status' => 'in_route']);
+
+    $this->actingAs($this->driverUser)->patch(route('driver.orders.status', $order), ['status' => 'no_show']);
+
+    expect($order->fresh()->customer_rating)->toBe(Customer::NO_SHOW_RATING)
+        ->and($customer->fresh()->rating)->toBe('1.00');
+});
+
+test('marking done requires a rating from 1 to 5', function (mixed $rating) {
+    $order = Order::factory()->create(['driver_id' => $this->driverUser->id, 'status' => 'in_route']);
+
+    $this->actingAs($this->driverUser)
+        ->patch(route('driver.orders.status', $order), [
+            'status' => 'done',
+            'payment_method' => 'cash',
+            'customer_rating' => $rating,
+            'items' => $this->soldItems,
+        ])
+        ->assertSessionHasErrors('customer_rating');
+
+    expect($order->fresh()->status)->toBe('in_route');
+})->with([null, 0, 6]);
+
+test('a customer without ratings keeps 5 stars', function () {
+    $customer = Customer::factory()->create(['rating' => 3]);
+
+    $customer->refreshRating();
+
+    expect($customer->fresh()->rating)->toBe('5.00');
+});
+
+test('dispatch staff are notified when an order is in route and when it is done', function () {
+    Notification::fake();
+    $staff = collect([0, 1, 2])->map(fn (int $rank) => User::factory()->create(['rank' => $rank]));
+    $otherDriver = User::factory()->create(['rank' => 3]);
+    $order = Order::factory()->create(['driver_id' => $this->driverUser->id, 'status' => 'dispatched']);
+
+    $this->actingAs($this->driverUser)->patch(route('driver.orders.status', $order), ['status' => 'in_route']);
+
+    Notification::assertSentTo($staff, OrderStatusChangedNotification::class);
+    Notification::assertNotSentTo([$otherDriver, $this->driverUser], OrderStatusChangedNotification::class);
+
+    $this->patch(route('driver.orders.status', $order), [
+        'status' => 'done',
+        'payment_method' => 'cash',
+        'customer_rating' => 5,
+        'items' => [['product_id' => $this->product->id, 'quantity' => 2]],
+    ]);
+
+    Notification::assertSentToTimes($staff->first(), OrderStatusChangedNotification::class, 2);
+});
+
+test('no shows do not notify dispatch staff', function () {
+    Notification::fake();
+    User::factory()->create(['rank' => 2]);
+    $order = Order::factory()->create(['driver_id' => $this->driverUser->id, 'status' => 'in_route']);
+
+    $this->actingAs($this->driverUser)->patch(route('driver.orders.status', $order), ['status' => 'no_show']);
+
+    Notification::assertNothingSent();
+});
+
+test('the staff notifications say who is heading where, then what was collected', function () {
+    $this->driverUser->update(['name' => 'John Lewis']);
+    $order = Order::factory()->create(['driver_id' => $this->driverUser->id, 'status' => 'in_route', 'address' => '4136 Rue Saint-Denis']);
+    $notification = new OrderStatusChangedNotification($order);
+
+    expect($notification->toWebPush($this->driverUser, $notification)->toArray())
+        ->title->toBe('Order on the way')
+        ->body->toBe('John Lewis is heading to 4136 Rue Saint-Denis')
+        ->tag->toBe("order-{$order->id}");
+
+    $order->update(['status' => 'done', 'payment_method' => 'emt']);
+    OrderItem::factory()->create(['order_id' => $order->id, 'product_id' => $this->product->id, 'quantity' => 2, 'unit_price' => 25]);
+    $notification = new OrderStatusChangedNotification($order->fresh());
+
+    expect($notification->toWebPush($this->driverUser, $notification)->toArray())
+        ->title->toBe('Order delivered')
+        ->body->toBe('John Lewis · 4136 Rue Saint-Denis · $50.00 by EMT')
+        ->data->toBe(['url' => route('orders.index', ['status' => 'done'])]);
 });

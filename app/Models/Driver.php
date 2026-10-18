@@ -2,12 +2,29 @@
 
 namespace App\Models;
 
+use App\Events\DriverLocationUpdated;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Driver extends Model
 {
+    /**
+     * How long after its last location a driver tracked in the background (OwnTracks) still counts as online.
+     */
+    public const BACKGROUND_ONLINE_MINUTES = 10;
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'tracking_token_hash',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -51,13 +68,71 @@ class Driver extends Model
     }
 
     /**
-     * Scope a query to only include drivers who are currently logged in and have a known location.
+     * Scope a query to drivers with a known location who are logged in, or still reporting it in the background.
      */
     public function scopeOnline(Builder $query): Builder
     {
-        return $query->whereHas('user', fn (Builder $q) => $q->where('is_online', true))
+        return $query
+            ->where(fn (Builder $query) => $query
+                ->whereHas('user', fn (Builder $q) => $q->where('is_online', true))
+                ->orWhere('gps_updated_at', '>=', now()->subMinutes(self::BACKGROUND_ONLINE_MINUTES)))
             ->whereNotNull('gps_lat')
             ->whereNotNull('gps_lng');
+    }
+
+    /**
+     * Save a new position and show it on the live tracking map, ignoring positions older than the one already known
+     * (OwnTracks resends points it queued while offline).
+     */
+    public function recordLocation(float $lat, float $lng, CarbonInterface $recordedAt): bool
+    {
+        if ($this->gps_updated_at && $recordedAt->lt($this->gps_updated_at)) {
+            return false;
+        }
+
+        $this->update([
+            'gps_lat' => $lat,
+            'gps_lng' => $lng,
+            'gps_updated_at' => $recordedAt,
+        ]);
+
+        DriverLocationUpdated::dispatch($this);
+
+        return true;
+    }
+
+    /**
+     * Create a new secret for the driver's background tracking app, replacing (and so disconnecting) any previous one.
+     */
+    public function issueTrackingToken(): string
+    {
+        $token = Str::random(40);
+
+        $this->forceFill(['tracking_token_hash' => hash('sha256', $token)])->save();
+
+        return $token;
+    }
+
+    /**
+     * Find the driver a background tracking app signs in as, matching both the account email and the secret.
+     */
+    public static function findByTrackingCredentials(?string $email, ?string $token): ?self
+    {
+        if (! $email || ! $token) {
+            return null;
+        }
+
+        $driver = self::with('user')->firstWhere('tracking_token_hash', hash('sha256', $token));
+
+        return $driver && hash_equals($driver->user->email, $email) ? $driver : null;
+    }
+
+    /**
+     * Determine whether a background tracking app has been set up for this driver.
+     */
+    public function hasTrackingApp(): bool
+    {
+        return $this->tracking_token_hash !== null;
     }
 
     /**

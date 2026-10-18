@@ -46,7 +46,12 @@
                 <tbody>
                     @foreach ($orders as $order)
                         <tr>
-                            <td data-label="Number">{{ $order->customer->phone }}</td>
+                            <td data-label="Number">
+                                <div>
+                                    {{ $order->customer->phone }}
+                                    <div class="text-muted small" title="Average of the ratings drivers gave this customer"><i class="bi bi-star-fill text-warning"></i> {{ number_format($order->customer->rating, 2) }}</div>
+                                </div>
+                            </td>
                             <td data-label="Address">{{ $order->address ?? '—' }}</td>
                             <td data-label="Status">
                                 <div>
@@ -140,12 +145,92 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            new simpleDatatables.DataTable('#ordersTable', {
-                perPageSelect: [5, 10, 25, 50],
-                labels: {
-                    placeholder: 'Search orders...',
-                },
-            });
+            function initOrdersTable(state = {}) {
+                const table = new simpleDatatables.DataTable('#ordersTable', {
+                    perPage: state.perPage ?? 10,
+                    perPageSelect: [5, 10, 25, 50],
+                    labels: {
+                        placeholder: 'Search orders...',
+                    },
+                });
+
+                if (state.query) {
+                    table.wrapperDOM.querySelector('.datatable-input').value = state.query;
+                    table.search(state.query);
+                }
+
+                if (state.page > 1) {
+                    table.page(state.page);
+                }
+
+                return table;
+            }
+
+            let ordersTable = initOrdersTable();
+
+            if (!window.Echo) {
+                return;
+            }
+
+            // Don't swap the table while someone is picking a driver, typing a search or answering a confirmation.
+            function isBusy() {
+                return ordersTable.wrapperDOM.contains(document.activeElement) || window.Swal?.isVisible();
+            }
+
+            let refreshTimer = null;
+
+            function scheduleRefresh(delay = 400) {
+                clearTimeout(refreshTimer);
+                refreshTimer = setTimeout(refreshOrders, delay);
+            }
+
+            async function refreshOrders() {
+                if (isBusy()) {
+                    scheduleRefresh(2000);
+                    return;
+                }
+
+                try {
+                    const response = await fetch(window.location.href, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+                    const freshTable = page.getElementById('ordersTable');
+                    if (!freshTable) {
+                        return;
+                    }
+
+                    // Someone started interacting while the page was loading: try again once they're done.
+                    if (isBusy()) {
+                        scheduleRefresh(2000);
+                        return;
+                    }
+
+                    const state = {
+                        query: ordersTable.wrapperDOM.querySelector('.datatable-input')?.value,
+                        page: ordersTable._currentPage,
+                        perPage: ordersTable.options.perPage,
+                    };
+
+                    ordersTable.destroy();
+                    document.getElementById('ordersTable').replaceWith(freshTable);
+                    ordersTable = initOrdersTable(state);
+
+                    // Briefly highlight the table so it's visible that the data just changed.
+                    ordersTable.wrapperDOM.animate(
+                        [{ backgroundColor: 'rgba(250, 204, 21, 0.25)' }, { backgroundColor: 'transparent' }],
+                        { duration: 1200, easing: 'ease-out' },
+                    );
+                } catch (error) {
+                    console.error('Live order refresh failed:', error);
+                }
+            }
+
+            window.Echo.private('orders').listen('OrderChanged', () => scheduleRefresh());
         });
     </script>
 @endpush

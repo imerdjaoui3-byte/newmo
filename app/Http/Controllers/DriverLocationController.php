@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\DriverLocationUpdated;
 use Illuminate\Http\Request;
 
 class DriverLocationController extends Controller
@@ -20,13 +19,7 @@ class DriverLocationController extends Controller
             return response()->json(['error' => 'No driver profile linked to this user.'], 404);
         }
 
-        $driver->update([
-            'gps_lat' => $request->lat,
-            'gps_lng' => $request->lng,
-            'gps_updated_at' => now(),
-        ]);
-
-        DriverLocationUpdated::dispatch($driver);
+        $driver->recordLocation((float) $request->lat, (float) $request->lng, now());
 
         return response()->json([
             'status' => 'ok',

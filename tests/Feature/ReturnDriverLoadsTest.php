@@ -55,6 +55,7 @@ test('a returned driver can no longer sell', function () {
         ->patch(route('driver.orders.status', $openOrder), [
             'status' => 'done',
             'payment_method' => 'cash',
+            'customer_rating' => 5,
             'items' => [['product_id' => $this->product->id, 'quantity' => 1]],
         ])
         ->assertSessionHasErrors('items.0.quantity');

@@ -21,10 +21,10 @@ test('the dispatch notification is a web push that opens the driver dashboard', 
         ->data->toBe(['url' => route('dashboard')]);
 });
 
-test('a dispatch without an address shows the customer phone', function () {
+test('a dispatch without an address shows the order number, never the customer phone', function () {
     $driver = User::factory()->create(['rank' => 3]);
     $order = Order::factory()->create(['driver_id' => $driver->id, 'address' => null]);
     $notification = new OrderDispatchedNotification($order);
 
-    expect($notification->toWebPush($driver, $notification)->toArray()['body'])->toBe($order->customer->phone);
+    expect($notification->toWebPush($driver, $notification)->toArray()['body'])->toBe("Order #{$order->id}");
 });

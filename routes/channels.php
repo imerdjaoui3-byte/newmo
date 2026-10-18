@@ -10,3 +10,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('drivers.tracking', function (User $user) {
     return ! $user->isDriver();
 });
+
+Broadcast::channel('orders', function (User $user) {
+    return ! $user->isDriver();
+});

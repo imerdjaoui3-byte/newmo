@@ -13,6 +13,59 @@
         </div>
     </section>
 
+    @if ($driverProfile = auth()->user()->driver)
+        <section class="card mt-4 mb-0">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h5 class="card-title mb-0">Background Tracking</h5>
+                    <span class="text-muted small">
+                        @if ($driverProfile->hasTrackingApp())
+                            OwnTracks connected{{ $driverProfile->gps_updated_at ? ' · last location '.$driverProfile->gps_updated_at->diffForHumans() : '' }}
+                        @else
+                            Share your location even when this page is closed, using the free OwnTracks app
+                        @endif
+                    </span>
+                </div>
+                <form method="POST" action="{{ route('driver.tracking.setup') }}"
+                    @if ($driverProfile->hasTrackingApp())
+                        data-confirm-form data-confirm-title="Set up OwnTracks again?"
+                        data-confirm-text="The phone currently connected will stop sending your location until it is set up with the new link."
+                        data-confirm-button="Set up again"
+                    @endif>
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
+                        <i class="bi bi-broadcast me-1"></i>{{ $driverProfile->hasTrackingApp() ? 'Set up again' : 'Set up OwnTracks' }}
+                    </button>
+                </form>
+            </div>
+            @if ($trackingSetup = session('trackingSetup'))
+                <div class="card-body">
+                    <ol class="small mb-3 ps-3">
+                        <li>Install OwnTracks:
+                            <a href="https://apps.apple.com/app/owntracks/id692424691" target="_blank" rel="noopener">iPhone</a> ·
+                            <a href="https://play.google.com/store/apps/details?id=org.owntracks.android" target="_blank" rel="noopener">Android</a>
+                        </li>
+                        <li>On this phone, tap the button below and accept the configuration.</li>
+                        <li>Allow location access <strong>"Always"</strong> (Android: also turn off battery optimisation for OwnTracks).</li>
+                    </ol>
+                    <a href="{{ $trackingSetup['link'] }}" class="btn btn-primary w-100 mb-3">
+                        <i class="bi bi-phone me-1"></i>Open in OwnTracks
+                    </a>
+                    <details class="small">
+                        <summary class="text-muted">Set it up manually instead</summary>
+                        <p class="mt-2 mb-1">In OwnTracks settings choose mode <strong>HTTP</strong> and enter:</p>
+                        <dl class="row mb-0">
+                            <dt class="col-4">URL</dt><dd class="col-8 text-break"><code>{{ $trackingSetup['url'] }}</code></dd>
+                            <dt class="col-4">Username</dt><dd class="col-8 text-break"><code>{{ $trackingSetup['username'] }}</code></dd>
+                            <dt class="col-4">Password</dt><dd class="col-8 text-break"><code>{{ $trackingSetup['password'] }}</code></dd>
+                        </dl>
+                        <p class="text-muted mt-2 mb-0">This password is only shown once.</p>
+                    </details>
+                </div>
+            @endif
+        </section>
+    @endif
+
     @if ($todaysLoads->isNotEmpty())
         <section class="card mt-4 mb-0">
             <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -86,9 +139,6 @@
                             </span>
                             <div class="min-w-0">
                                 <div class="order-row-name">{{ $order->customer->name ?? 'Unknown customer' }}</div>
-                                <a href="tel:{{ $order->customer->phone }}" class="order-row-phone">
-                                    <i class="bi bi-telephone-fill me-1"></i>{{ $order->customer->phone }}
-                                </a>
                             </div>
                         </div>
                         <span class="order-row-status order-row-status-{{ $order->statusBadgeVariant() }}">
@@ -160,6 +210,17 @@
                     <div class="d-none" id="paymentReferenceGroup">
                         <label for="payment_reference" class="form-label">EMT transaction ID</label>
                         <input type="text" class="form-control" id="payment_reference" name="payment_reference" maxlength="255">
+                    </div>
+
+                    <hr>
+
+                    <h6 class="mb-2">Rate the customer</h6>
+                    <div class="d-flex gap-1 mb-3" role="radiogroup" aria-label="Customer rating">
+                        @foreach (range(1, 5) as $stars)
+                            <input type="radio" class="btn-check" name="customer_rating" id="customerRating{{ $stars }}"
+                                value="{{ $stars }}" required>
+                            <label class="btn btn-outline-warning flex-fill" for="customerRating{{ $stars }}">{{ $stars }} <i class="bi bi-star-fill"></i></label>
+                        @endforeach
                     </div>
 
                     <hr>

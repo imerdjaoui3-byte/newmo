@@ -47,6 +47,34 @@ async function subscribe() {
     }
   } catch (error) {
     console.error('Error subscribing to push notifications:', error);
+
+    if (error.name === 'AbortError') {
+      await explainBlockedPushService();
+    }
+  }
+}
+
+// The browser's push service refused to subscribe (Brave ships with it switched off). Say so once per session,
+// otherwise notifications silently never arrive.
+async function explainBlockedPushService() {
+  try {
+    if (sessionStorage.getItem('pushServiceWarningShown') === '1') {
+      return;
+    }
+    sessionStorage.setItem('pushServiceWarningShown', '1');
+  } catch {
+    // Without storage the warning may repeat, which is still better than silence.
+  }
+
+  const isBrave = await navigator.brave?.isBrave?.().catch(() => false);
+  const text = isBrave
+    ? 'Brave blocks push notifications by default. Open brave://settings/privacy, turn on "Use Google services for push messaging", then restart Brave.'
+    : "This browser's push service refused to register, so notifications can't be delivered here. Check that notifications are allowed for this site and that you're not in a private window.";
+
+  if (window.Swal) {
+    window.Swal.fire({ icon: 'warning', title: 'Notifications are blocked', text });
+  } else {
+    alert(text);
   }
 }
 

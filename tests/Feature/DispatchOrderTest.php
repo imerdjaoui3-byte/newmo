@@ -146,3 +146,15 @@ test('the cancel button only shows for orders on their way', function () {
         ->assertSee(route('orders.unassign', $dispatched))
         ->assertDontSee(route('orders.unassign', $pending));
 });
+
+test('drivers never see the customer phone number', function () {
+    $driver = createDriver();
+    $order = Order::factory()->create(['driver_id' => $driver->user_id, 'status' => 'dispatched']);
+
+    $this->actingAs($driver->user)
+        ->get(route('dashboard'))
+        ->assertSee($order->address)
+        ->assertDontSee($order->customer->phone);
+
+    expect((new OrderDispatched($order))->broadcastWith()['order'])->not->toHaveKey('phone');
+});

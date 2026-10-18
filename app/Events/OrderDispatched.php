@@ -41,14 +41,13 @@ class OrderDispatched implements ShouldBroadcastNow, ShouldRescue
     /**
      * Get the data to broadcast.
      *
-     * @return array{order: array{id: int, phone: string, address: ?string}}
+     * @return array{order: array{id: int, address: ?string}}
      */
     public function broadcastWith(): array
     {
         return [
             'order' => [
                 'id' => $this->order->id,
-                'phone' => $this->order->customer->phone,
                 'address' => $this->order->address,
             ],
         ];

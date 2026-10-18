@@ -92,7 +92,22 @@
                 }
             }
 
-            setInterval(refreshOnlineDrivers, 8000);
+            // Echo is set up by the app bundle, which only runs once the page has loaded.
+            document.addEventListener('DOMContentLoaded', () => {
+                if (!window.Echo) {
+                    setInterval(refreshOnlineDrivers, 8000);
+                    return;
+                }
+
+                // Live: refresh as soon as any driver reports a new position; the slow poll only drops drivers who went offline.
+                let refreshTimer = null;
+                window.Echo.private('drivers.tracking').listen('DriverLocationUpdated', () => {
+                    clearTimeout(refreshTimer);
+                    refreshTimer = setTimeout(refreshOnlineDrivers, 500);
+                });
+
+                setInterval(refreshOnlineDrivers, 30000);
+            });
         })();
 
         (function() {

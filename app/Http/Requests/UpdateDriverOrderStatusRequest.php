@@ -32,6 +32,7 @@ class UpdateDriverOrderStatusRequest extends FormRequest
             'status' => ['required', Rule::in(['in_route', 'done', 'no_show'])],
             'payment_method' => ['nullable', 'required_if:status,done', Rule::in(['emt', 'cash'])],
             'payment_reference' => ['nullable', 'required_if:payment_method,emt', 'string', 'max:255'],
+            'customer_rating' => ['exclude_unless:status,done', 'required', 'integer', 'between:1,5'],
             'items' => ['exclude_unless:status,done', 'required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'distinct'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:1000000'],
@@ -94,6 +95,7 @@ class UpdateDriverOrderStatusRequest extends FormRequest
     {
         return [
             'payment_method.required_if' => 'Choose whether the order was paid by EMT or cash.',
+            'customer_rating.required' => 'Rate the customer from 1 to 5 stars.',
             'payment_reference.required_if' => 'Enter the EMT transaction ID.',
             'items.required' => 'Select the products that were sold.',
             'items.*.product_id.distinct' => 'Each product can only be listed once.',
