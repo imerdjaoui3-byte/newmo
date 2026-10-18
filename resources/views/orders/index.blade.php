@@ -5,6 +5,8 @@
 @section('content-class', 'page-dashboard')
 
 @section('content')
+    <div class="row g-3">
+    <div class="{{ $showDone ? 'col-12' : 'col-xl-9' }}">
     <section class="card">
         <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
@@ -47,9 +49,17 @@
                     @foreach ($orders as $order)
                         <tr>
                             <td data-label="Number">
+                                <div class="d-flex align-items-start gap-2">
+                                    @if ($order->status !== 'done')
+                                        <i class="bi bi-grip-vertical text-muted order-drag-data" title="Drag onto a driver to assign"
+                                            data-dispatch-url="{{ route('orders.dispatch', $order) }}"
+                                            data-order-label="{{ $order->customer->phone }}"
+                                            data-current-driver-id="{{ $order->driver_id }}"></i>
+                                    @endif
                                 <div>
                                     {{ $order->customer->phone }}
                                     <div class="text-muted small" title="Average of the ratings drivers gave this customer"><i class="bi bi-star-fill text-warning"></i> {{ number_format($order->customer->rating, 2) }}</div>
+                                </div>
                                 </div>
                             </td>
                             <td data-label="Address">{{ $order->address ?? '—' }}</td>
@@ -140,7 +150,36 @@
             </table>
         </div>
     </section>
+    </div>
+    @unless ($showDone)
+        <div class="col-xl-3">
+            <section class="card dispatch-drivers">
+                <div class="card-header d-flex align-items-center justify-content-between gap-2">
+                    <div>
+                        <h5 class="card-title mb-1">Online Drivers</h5>
+                        <p class="text-muted small mb-0">Drag an order onto a driver to assign it</p>
+                    </div>
+                    <span class="la-badge la-badge-info" id="dispatchDriversCount">0 online</span>
+                </div>
+                <div class="card-body d-flex flex-column gap-2" id="dispatchDrivers">
+                    <p class="text-muted small mb-0">Loading drivers…</p>
+                </div>
+            </section>
+        </div>
+    @endunless
+    </div>
 @endsection
+
+@push('styles')
+    <style>
+        #ordersTable tr:has(.order-drag-data) { cursor: grab; }
+        .dispatch-drivers { position: sticky; top: 1rem; }
+        .driver-drop-zone { border: 2px dashed transparent; transition: border-color .15s, background-color .15s; }
+        .dispatch-dragging .driver-drop-zone { border-color: var(--bs-border-color); }
+        .driver-drop-zone:has(.order-drag-ghost) { border-color: var(--bs-primary); background-color: rgba(var(--bs-primary-rgb), .08); }
+        .driver-drop-zone tr { display: none; }
+    </style>
+@endpush
 
 @push('scripts')
     <script>
@@ -163,18 +202,20 @@
                     table.page(state.page);
                 }
 
+                ['datatable.page', 'datatable.perpage', 'datatable.search', 'datatable.sort', 'datatable.update']
+                    .forEach((event) => table.on(event, bindOrdersDrag));
+
                 return table;
             }
 
+            let ordersSortable = null;
+            let isDragging = false;
             let ordersTable = initOrdersTable();
+            bindOrdersDrag();
 
-            if (!window.Echo) {
-                return;
-            }
-
-            // Don't swap the table while someone is picking a driver, typing a search or answering a confirmation.
+            // Don't swap the table while someone is picking a driver, dragging an order, typing a search or answering a confirmation.
             function isBusy() {
-                return ordersTable.wrapperDOM.contains(document.activeElement) || window.Swal?.isVisible();
+                return isDragging || ordersTable.wrapperDOM.contains(document.activeElement) || window.Swal?.isVisible();
             }
 
             let refreshTimer = null;
@@ -219,6 +260,7 @@
                     ordersTable.destroy();
                     document.getElementById('ordersTable').replaceWith(freshTable);
                     ordersTable = initOrdersTable(state);
+                    bindOrdersDrag();
 
                     // Briefly highlight the table so it's visible that the data just changed.
                     ordersTable.wrapperDOM.animate(
@@ -230,7 +272,132 @@
                 }
             }
 
-            window.Echo.private('orders').listen('OrderChanged', () => scheduleRefresh());
+            // Orders are copied out when dragged, so the table itself never changes until it reloads.
+            // The table re-renders its body on paging, searching and sorting, so dragging follows whichever body is current.
+            function bindOrdersDrag() {
+                const body = document.querySelector('#ordersTable tbody');
+                if (ordersSortable?.el === body) {
+                    return;
+                }
+
+                ordersSortable?.destroy();
+                ordersSortable = body && Sortable.create(body, {
+                    group: { name: 'dispatch', pull: 'clone', put: false },
+                    sort: false,
+                    // Any open order's row can be dragged, but not from its controls, which keep working as usual.
+                    filter: (event, row) => !row.querySelector('.order-drag-data')
+                        || event.target.closest('a, button, input, select, textarea, label'),
+                    preventOnFilter: false,
+                    // On touch screens a short hold starts the drag, so swiping still scrolls the page.
+                    delay: 200,
+                    delayOnTouchOnly: true,
+                    ghostClass: 'order-drag-ghost',
+                    onStart: () => {
+                        isDragging = true;
+                        document.body.classList.add('dispatch-dragging');
+                    },
+                    onEnd: () => {
+                        isDragging = false;
+                        document.body.classList.remove('dispatch-dragging');
+                        if (pendingDrivers) {
+                            renderDrivers(pendingDrivers);
+                        }
+                    },
+                });
+            }
+
+            async function dispatchOrder(order, driver) {
+                if (order.currentDriverId === String(driver.user_id)) {
+                    return;
+                }
+
+                if (order.currentDriverId) {
+                    const result = await Swal.fire({
+                        title: 'Reassign order?',
+                        text: `The order from ${order.orderLabel} will be moved to ${driver.name}.`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Reassign',
+                    });
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+                }
+
+                try {
+                    await axios.post(order.dispatchUrl, { driver_id: driver.user_id }, { headers: { Accept: 'application/json' } });
+                } catch (error) {
+                    Swal.fire({
+                        title: 'Could not assign the order',
+                        text: error.response?.data?.message ?? 'Please try again.',
+                        icon: 'error',
+                    });
+                }
+
+                scheduleRefresh(0);
+            }
+
+            const driversEl = document.getElementById('dispatchDrivers');
+            let driverDropZones = [];
+            let pendingDrivers = null;
+
+            function renderDrivers(drivers) {
+                // Re-rendering mid-drag would pull the drop targets from under the cursor.
+                if (isDragging) {
+                    pendingDrivers = drivers;
+                    return;
+                }
+                pendingDrivers = null;
+
+                document.getElementById('dispatchDriversCount').textContent = `${drivers.length} online`;
+                driverDropZones.forEach((zone) => zone.destroy());
+
+                if (drivers.length === 0) {
+                    driversEl.innerHTML = '<p class="text-muted small mb-0">No drivers online right now.</p>';
+                    driverDropZones = [];
+                    return;
+                }
+
+                const cards = [...drivers].sort((a, b) => a.name.localeCompare(b.name)).map((driver) => {
+                    const card = document.createElement('div');
+                    card.className = 'driver-drop-zone rounded border px-3 py-2';
+                    card.innerHTML = `
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-circle-fill text-success" style="font-size: 0.6rem;"></i>
+                            <strong></strong>
+                        </div>
+                        <div class="text-muted small"></div>
+                    `;
+                    card.querySelector('strong').textContent = driver.name;
+                    card.querySelector('.small').textContent = [driver.car, driver.color].filter(Boolean).join(' · ') || 'No car set';
+
+                    return { card, driver };
+                });
+
+                driversEl.replaceChildren(...cards.map(({ card }) => card));
+                driverDropZones = cards.map(({ card, driver }) => Sortable.create(card, {
+                    group: { name: 'dispatch', pull: false, put: true },
+                    sort: false,
+                    onAdd: (event) => {
+                        const orderData = event.item.querySelector('.order-drag-data');
+                        event.item.remove();
+                        if (orderData) {
+                            dispatchOrder({ ...orderData.dataset }, driver);
+                        }
+                    },
+                }));
+            }
+
+            if (driversEl) {
+                window.watchOnlineDrivers({
+                    dataUrl: '{{ route('drivers.tracking.data') }}',
+                    onChange: renderDrivers,
+                });
+            }
+
+            if (window.Echo) {
+                window.Echo.private('orders').listen('OrderChanged', () => scheduleRefresh());
+            }
         });
     </script>
 @endpush

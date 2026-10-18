@@ -151,55 +151,24 @@
                 });
             }
 
-            const drivers = new Map();
-
-            function render() {
-                const list = [...drivers.values()];
-
+            function render(list) {
                 countEl.textContent = `${list.length} online`;
                 syncMarkers(list);
                 renderList(list);
             }
 
-            async function refresh() {
-                try {
-                    const response = await fetch('{{ route('drivers.tracking.data') }}', {
-                        headers: {
-                            Accept: 'application/json',
-                        },
-                    });
-                    const data = await response.json();
-
-                    drivers.clear();
-                    data.drivers.forEach(driver => drivers.set(driver.id, driver));
-                    render();
-                } catch (error) {
-                    // silently retry on the next poll
-                }
-            }
-
-            refresh();
+            const onlineDrivers = window.watchOnlineDrivers({
+                dataUrl: '{{ route('drivers.tracking.data') }}',
+                onChange: render,
+            });
 
             const refreshBtn = document.getElementById('trackingRefresh');
 
             refreshBtn.addEventListener('click', async () => {
                 refreshBtn.disabled = true;
-                await refresh();
+                await onlineDrivers.refresh();
                 refreshBtn.disabled = false;
             });
-
-            if (window.Echo) {
-                // Live positions arrive over Reverb; the slow refresh only drops drivers who logged out.
-                window.Echo.private('drivers.tracking')
-                    .listen('DriverLocationUpdated', (event) => {
-                        drivers.set(event.driver.id, event.driver);
-                        render();
-                    });
-
-                setInterval(refresh, 60000);
-            } else {
-                setInterval(refresh, 8000);
-            }
         });
     </script>
 @endpush

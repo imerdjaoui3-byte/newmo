@@ -57,56 +57,36 @@
         (function() {
             'use strict';
 
-            async function refreshOnlineDrivers() {
-                try {
-                    const response = await fetch('{{ route('drivers.tracking.data') }}', {
-                        headers: {
-                            Accept: 'application/json',
-                        },
-                    });
-                    const data = await response.json();
+            function renderOnlineDrivers(drivers) {
+                document.getElementById('onlineDriversCount').textContent = `${drivers.length} online`;
 
-                    document.getElementById('onlineDriversCount').textContent = `${data.drivers.length} online`;
-
-                    const tbody = document.querySelector('#onlineDriversTable tbody');
-                    if (data.drivers.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">No drivers online right now.</td></tr>';
-                        return;
-                    }
-
-                    tbody.innerHTML = data.drivers.map(driver => `
-                        <tr>
-                            <td data-label="Driver">
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="bi bi-circle-fill text-success" style="font-size: 0.6rem;"></i>
-                                    <span>${driver.name}</span>
-                                </div>
-                            </td>
-                            <td data-label="Car">${driver.car ?? '—'} ${driver.color ? '· ' + driver.color : ''}</td>
-                            <td data-label="Location">${driver.lat.toFixed(4)}, ${driver.lng.toFixed(4)}</td>
-                            <td data-label="Updated">${driver.updated_at ?? 'just now'}</td>
-                        </tr>
-                    `).join('');
-                } catch (error) {
-                    // silently retry on the next poll
-                }
-            }
-
-            // Echo is set up by the app bundle, which only runs once the page has loaded.
-            document.addEventListener('DOMContentLoaded', () => {
-                if (!window.Echo) {
-                    setInterval(refreshOnlineDrivers, 8000);
+                const tbody = document.querySelector('#onlineDriversTable tbody');
+                if (drivers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">No drivers online right now.</td></tr>';
                     return;
                 }
 
-                // Live: refresh as soon as any driver reports a new position; the slow poll only drops drivers who went offline.
-                let refreshTimer = null;
-                window.Echo.private('drivers.tracking').listen('DriverLocationUpdated', () => {
-                    clearTimeout(refreshTimer);
-                    refreshTimer = setTimeout(refreshOnlineDrivers, 500);
-                });
+                tbody.innerHTML = drivers.map(driver => `
+                    <tr>
+                        <td data-label="Driver">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-circle-fill text-success" style="font-size: 0.6rem;"></i>
+                                <span>${driver.name}</span>
+                            </div>
+                        </td>
+                        <td data-label="Car">${driver.car ?? '—'} ${driver.color ? '· ' + driver.color : ''}</td>
+                        <td data-label="Location">${driver.lat.toFixed(4)}, ${driver.lng.toFixed(4)}</td>
+                        <td data-label="Updated">${driver.updated_at ?? 'just now'}</td>
+                    </tr>
+                `).join('');
+            }
 
-                setInterval(refreshOnlineDrivers, 30000);
+            // The app bundle (Echo and the watcher) only runs once the page has loaded.
+            document.addEventListener('DOMContentLoaded', () => {
+                window.watchOnlineDrivers({
+                    dataUrl: '{{ route('drivers.tracking.data') }}',
+                    onChange: renderOnlineDrivers,
+                });
             });
         })();
 

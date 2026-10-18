@@ -1,8 +1,12 @@
 import './bootstrap';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import Sortable from 'sortablejs';
+import { watchOnlineDrivers } from './online-drivers';
 
 window.Swal = Swal;
+window.Sortable = Sortable;
+window.watchOnlineDrivers = watchOnlineDrivers;
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-logout-form]').forEach((form) => {

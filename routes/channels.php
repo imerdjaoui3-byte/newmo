@@ -14,3 +14,11 @@ Broadcast::channel('drivers.tracking', function (User $user) {
 Broadcast::channel('orders', function (User $user) {
     return ! $user->isDriver();
 });
+
+Broadcast::channel('drivers.online', function (User $user) {
+    if ($user->isDriver()) {
+        return $user->driver ? ['id' => $user->id, 'driver_id' => $user->driver->id] : false;
+    }
+
+    return $user->isPending() ? false : ['id' => $user->id, 'driver_id' => null];
+});

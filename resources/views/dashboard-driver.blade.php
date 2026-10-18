@@ -332,6 +332,9 @@
                         // Reload so the cancelled order disappears.
                         window.location.reload();
                     });
+
+                // Dispatch sees this driver go offline the moment this page closes.
+                window.Echo.join('drivers.online');
             }
 
             if (!navigator.geolocation) {

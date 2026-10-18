@@ -40,6 +40,32 @@ test('a dispatcher can dispatch an order to an active driver', function () {
     Event::assertDispatched(OrderDispatched::class, fn (OrderDispatched $event) => $event->order->is($order));
 });
 
+test('dropping an order on a driver dispatches it and answers with json', function () {
+    $driver = createDriver();
+    $order = Order::factory()->create();
+
+    $this->actingAs(User::factory()->create(['rank' => 2]))
+        ->postJson(route('orders.dispatch', $order), ['driver_id' => $driver->user_id])
+        ->assertOk()
+        ->assertJson(['message' => "Order dispatched to {$driver->user->name}."]);
+
+    expect($order->fresh())
+        ->driver_id->toBe($driver->user_id)
+        ->status->toBe('dispatched');
+});
+
+test('dropping an order on an inactive driver explains why it failed', function () {
+    $driver = createDriver(isActive: false);
+    $order = Order::factory()->create();
+
+    $this->actingAs(User::factory()->create(['rank' => 2]))
+        ->postJson(route('orders.dispatch', $order), ['driver_id' => $driver->user_id])
+        ->assertUnprocessable()
+        ->assertJson(['message' => 'The selected driver is not active.']);
+
+    expect($order->fresh()->driver_id)->toBeNull();
+});
+
 test('the driver gets a push notification for the dispatched order', function () {
     Notification::fake();
     $driver = createDriver();

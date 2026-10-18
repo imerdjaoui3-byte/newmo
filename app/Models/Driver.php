@@ -17,6 +17,12 @@ class Driver extends Model
     public const BACKGROUND_ONLINE_MINUTES = 10;
 
     /**
+     * How long after its last ping a driver sharing their location from the open dashboard still counts as online
+     * (the dashboard pings every 10 seconds).
+     */
+    public const DASHBOARD_ONLINE_SECONDS = 30;
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
@@ -68,16 +74,31 @@ class Driver extends Model
     }
 
     /**
-     * Scope a query to drivers with a known location who are logged in, or still reporting it in the background.
+     * Scope a query to drivers with a known location who are logged in with the dashboard open, or still reporting
+     * it in the background. Being logged in alone is not enough: closing the browser never logs a driver out.
      */
     public function scopeOnline(Builder $query): Builder
     {
         return $query
             ->where(fn (Builder $query) => $query
-                ->whereHas('user', fn (Builder $q) => $q->where('is_online', true))
-                ->orWhere('gps_updated_at', '>=', now()->subMinutes(self::BACKGROUND_ONLINE_MINUTES)))
+                ->whereHas('user', fn (Builder $q) => $q
+                    ->where('is_online', true)
+                    ->where('last_seen_at', '>=', now()->subSeconds(self::DASHBOARD_ONLINE_SECONDS)))
+                ->orWhere(fn (Builder $q) => $q
+                    ->whereNotNull('tracking_token_hash')
+                    ->where('gps_updated_at', '>=', now()->subMinutes(self::BACKGROUND_ONLINE_MINUTES))))
             ->whereNotNull('gps_lat')
             ->whereNotNull('gps_lng');
+    }
+
+    /**
+     * Determine whether the background tracking app is still reporting this driver's location, so they stay online
+     * after closing the dashboard.
+     */
+    public function isTrackedInBackground(): bool
+    {
+        return $this->hasTrackingApp()
+            && $this->gps_updated_at?->gte(now()->subMinutes(self::BACKGROUND_ONLINE_MINUTES));
     }
 
     /**
@@ -138,12 +159,13 @@ class Driver extends Model
     /**
      * Get the driver's details as shown on the live tracking map.
      *
-     * @return array{id: int, name: string, phone: ?string, car: ?string, color: ?string, status: ?string, lat: float, lng: float, updated_at: ?string}
+     * @return array{id: int, user_id: int, name: string, phone: ?string, car: ?string, color: ?string, status: ?string, lat: float, lng: float, updated_at: ?string, background: bool}
      */
     public function toTrackingArray(): array
     {
         return [
             'id' => $this->id,
+            'user_id' => $this->user_id,
             'name' => $this->user->name,
             'phone' => $this->phone,
             'car' => $this->car,
@@ -152,6 +174,7 @@ class Driver extends Model
             'lat' => (float) $this->gps_lat,
             'lng' => (float) $this->gps_lng,
             'updated_at' => $this->gps_updated_at?->diffForHumans(),
+            'background' => $this->isTrackedInBackground(),
         ];
     }
 

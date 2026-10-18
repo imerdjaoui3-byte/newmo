@@ -19,6 +19,8 @@ class DriverLocationController extends Controller
             return response()->json(['error' => 'No driver profile linked to this user.'], 404);
         }
 
+        $request->user()->update(['is_online' => true, 'last_seen_at' => now()]);
+
         $driver->recordLocation((float) $request->lat, (float) $request->lng, now());
 
         return response()->json([
