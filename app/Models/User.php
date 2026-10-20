@@ -19,6 +19,11 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class User extends Authenticatable
 {
+    /**
+     * How long after their last visit a logged-in user still counts as online.
+     */
+    public const ONLINE_MINUTES = 5;
+
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable;
 
@@ -228,6 +233,19 @@ class User extends Authenticatable
     public function isPending(): bool
     {
         return $this->rank === null;
+    }
+
+    /**
+     * Determine whether the user is using the app right now. Being logged in is not enough: closing the browser
+     * never logs anyone out. Drivers follow the live tracking rules instead.
+     */
+    public function isOnline(): bool
+    {
+        if ($this->isDriver() && $this->driver) {
+            return $this->driver->setRelation('user', $this)->isOnline();
+        }
+
+        return $this->is_online && (bool) $this->last_seen_at?->gte(now()->subMinutes(self::ONLINE_MINUTES));
     }
 
     /**

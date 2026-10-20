@@ -19,6 +19,7 @@ class UserController extends Controller
     public function index(): View
     {
         $users = User::where(fn (Builder $query) => $query->ranked()->orWhereNull('rank'))
+            ->with('driver')
             ->orderByRaw('`rank` is null desc')
             ->latest()
             ->get();

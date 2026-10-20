@@ -88,6 +88,14 @@ class Order extends Model
     }
 
     /**
+     * Get what the customer paid for everything on this order.
+     */
+    public function total(): float
+    {
+        return $this->items->sum(fn (OrderItem $item) => $item->lineTotal());
+    }
+
+    /**
      * Determine whether the order is dispatched to a driver and not yet delivered.
      */
     public function isOpen(): bool

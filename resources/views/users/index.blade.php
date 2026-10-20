@@ -29,7 +29,9 @@
                         <tr>
                             <td data-label="User">
                                 <div class="d-flex align-items-center gap-2">
-                                    <i class="bi bi-circle-fill {{ $user->is_online ? 'text-success' : 'text-danger' }}" style="font-size: 0.6rem;" title="{{ $user->is_online ? 'Online' : 'Offline' }}"></i>
+                                    @php($isOnline = $user->isOnline())
+                                    <i class="bi bi-circle-fill {{ $isOnline ? 'text-success' : 'text-danger' }}" style="font-size: 0.6rem;"
+                                        title="{{ $isOnline ? 'Online' : ($user->last_seen_at ? 'Last seen '.$user->last_seen_at->diffForHumans() : 'Offline') }}"></i>
                                     <span>{{ $user->name }}</span>
                                 </div>
                             </td>

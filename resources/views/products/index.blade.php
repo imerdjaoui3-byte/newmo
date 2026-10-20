@@ -32,7 +32,7 @@
                     @foreach ($products as $product)
                         <tr>
                             <td data-label="Name">{{ $product->name }}</td>
-                            <td data-label="Price">{{ number_format($product->price, 2) }}</td>
+                            <td data-label="Price">{{ Number::money($product->price) }}</td>
                             <td data-label="In Stock"><span class="la-badge la-badge-{{ $product->stockBadgeVariant() }}">{{ $product->quantity }}</span></td>
                             <td data-label="Adjust">
                                 <form method="POST" action="{{ route('products.stock', $product) }}" class="d-flex gap-2">

@@ -34,7 +34,9 @@
                             <td data-label="Driver">
                                 @if ($driver->user)
                                     <div class="d-flex align-items-center gap-2">
-                                        <i class="bi bi-circle-fill {{ $driver->user->is_online ? 'text-success' : 'text-danger' }}" style="font-size: 0.6rem;" title="{{ $driver->user->is_online ? 'Online' : 'Offline' }}"></i>
+                                        @php($isOnline = $driver->isOnline())
+                                        <i class="bi bi-circle-fill {{ $isOnline ? 'text-success' : 'text-danger' }}" style="font-size: 0.6rem;"
+                                            title="{{ $isOnline ? 'Online' : ($driver->user->last_seen_at ? 'Last seen '.$driver->user->last_seen_at->diffForHumans() : 'Offline') }}"></i>
                                         <span>{{ $driver->user->name }}</span>
                                     </div>
                                 @else

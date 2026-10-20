@@ -34,7 +34,7 @@
             @error('payment')
                 <div class="alert alert-danger">{{ $message }}</div>
             @enderror
-            <table id="ordersTable" class="table table-stack">
+            <table id="ordersTable" class="table table-stack table-striped table-hover align-middle">
                 <thead>
                     <tr>
                         <th>Incoming Number</th>
@@ -173,10 +173,14 @@
 @push('styles')
     <style>
         #ordersTable tr:has(.order-drag-data) { cursor: grab; }
+        #ordersTable {
+            --table-stripe-bg: color-mix(in srgb, var(--accent-color) 7%, transparent);
+            --table-hover-bg: color-mix(in srgb, var(--accent-color) 14%, transparent);
+        }
         .dispatch-drivers { position: sticky; top: 1rem; }
         .driver-drop-zone { border: 2px dashed transparent; transition: border-color .15s, background-color .15s; }
         .dispatch-dragging .driver-drop-zone { border-color: var(--bs-border-color); }
-        .driver-drop-zone:has(.order-drag-ghost) { border-color: var(--bs-primary); background-color: rgba(var(--bs-primary-rgb), .08); }
+        .driver-drop-zone:has(.order-drag-ghost) { border-color: var(--accent-color); background-color: color-mix(in srgb, var(--accent-color) 10%, transparent); }
         .driver-drop-zone tr { display: none; }
     </style>
 @endpush

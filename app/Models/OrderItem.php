@@ -46,6 +46,14 @@ class OrderItem extends Model
     }
 
     /**
+     * Get what this line was sold for.
+     */
+    public function lineTotal(): float
+    {
+        return $this->quantity * (float) $this->unit_price;
+    }
+
+    /**
      * Get the product that was sold.
      */
     public function product(): BelongsTo

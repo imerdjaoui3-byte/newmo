@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/driver/tracking-setup', DriverTrackingSetupController::class)->name('driver.tracking.setup');
 
     Route::get('/bills', [BillController::class, 'index'])->name('bills.index');
+    Route::get('/bills/{bill}', [BillController::class, 'show'])->name('bills.show');
 
     Route::get('/mailbox', [MailboxController::class, 'show'])->name('mailbox.show');
     Route::get('/mailbox/connect', [MailboxController::class, 'connect'])->name('mailbox.connect');

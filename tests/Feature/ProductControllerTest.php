@@ -16,6 +16,17 @@ test('guests are redirected to login', function () {
     $this->get(route('products.index'))->assertRedirect(route('login'));
 });
 
+test('prices are shown in dollars, without cents when there are none', function () {
+    Product::factory()->create(['price' => 12]);
+    Product::factory()->create(['price' => 7.5]);
+
+    $this->get(route('products.index'))
+        ->assertOk()
+        ->assertSee('$12<', false)
+        ->assertSee('$7.50')
+        ->assertDontSee('12.00');
+});
+
 test('products index lists products', function () {
     $product = Product::factory()->create();
 

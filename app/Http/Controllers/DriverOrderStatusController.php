@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateDriverOrderStatusRequest;
+use App\Models\Bill;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
@@ -16,7 +17,8 @@ class DriverOrderStatusController extends Controller
 {
     /**
      * Mark one of the driver's orders as in route, no show, or done along with how it was paid and what was sold.
-     * Cash payments count as paid right away; EMT payments wait for the inbox check.
+     * Cash payments count as paid right away; EMT payments wait for the inbox check. Each sale goes on the driver's
+     * bill for the day straight away.
      * Done orders carry the driver's rating of the customer and no shows count as the lowest rating; the customer's
      * rating is the average of all of these. Dispatch staff get a push notification when the order is in route or done.
      */
@@ -55,6 +57,8 @@ class DriverOrderStatusController extends Controller
                     'unit_price' => $prices[$item['product_id']],
                 ]);
             }
+
+            Bill::refreshFor($order->driver, today());
         });
 
         if (in_array($order->status, ['in_route', 'done'], true)) {

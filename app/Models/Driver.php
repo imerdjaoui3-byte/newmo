@@ -92,6 +92,15 @@ class Driver extends Model
     }
 
     /**
+     * Determine whether the driver is online, by the same rules as the online scope (minus needing a location).
+     */
+    public function isOnline(): bool
+    {
+        return ($this->user->is_online && $this->user->last_seen_at?->gte(now()->subSeconds(self::DASHBOARD_ONLINE_SECONDS)))
+            || $this->isTrackedInBackground();
+    }
+
+    /**
      * Determine whether the background tracking app is still reporting this driver's location, so they stay online
      * after closing the dashboard.
      */

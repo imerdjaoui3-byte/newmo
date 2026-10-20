@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateDriverLoadsRequest;
+use App\Models\Bill;
 use App\Models\Driver;
 use App\Models\DriverLoad;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DriverLoadController extends Controller
@@ -34,7 +37,7 @@ class DriverLoadController extends Controller
 
     /**
      * Save the drivers' stock for the day, moving the difference out of (or back into) the warehouse.
-     * Changing the stock of a driver who already returned reopens their day so they can sell and return again.
+     * Changing the stock of a driver who already returned reopens their day (and bill) so they can sell and return again.
      */
     public function update(UpdateDriverLoadsRequest $request): RedirectResponse
     {
@@ -74,6 +77,9 @@ class DriverLoadController extends Controller
             DriverLoad::whereDate('load_date', $date)
                 ->whereIn('driver_id', array_unique($changedDriverIds))
                 ->update(['returned_at' => null]);
+
+            User::findMany(array_unique($changedDriverIds))
+                ->each(fn (User $driver) => Bill::refreshFor($driver, Carbon::parse($date)));
         });
 
         return redirect()->route('driver-loads.index', ['date' => $date])->with('status', 'Driver stock saved.');

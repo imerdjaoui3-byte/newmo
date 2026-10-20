@@ -35,3 +35,10 @@ test('drivers cannot listen on the tracking channel', function () {
     authorizeTrackingChannel(User::factory()->make(['id' => 1, 'rank' => 3]))
         ->assertForbidden();
 });
+
+test('only staff can listen for bill updates', function (int $rank, int $status) {
+    test()->actingAs(User::factory()->make(['id' => 1, 'rank' => $rank]))->post('/broadcasting/auth', [
+        'socket_id' => '1234.5678',
+        'channel_name' => 'private-bills',
+    ])->assertStatus($status);
+})->with(['dispatch' => [2, 200], 'driver' => [3, 403]]);
